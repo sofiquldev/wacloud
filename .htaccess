@@ -1,0 +1,16 @@
+# Use only when the web server's document root is this project folder instead of `public/`.
+# Best practice: set the vhost / site document root to `public/` and you do not need this file.
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # ACME / Let's Encrypt validation when the host serves from project root.
+    RewriteCond %{REQUEST_URI} !^/\.well-known/ [NC]
+
+    # Route everything into `public/` (front controller rules live in `public/.htaccess`).
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

@@ -1,0 +1,125 @@
+/* Pabna Pourashava — civic palette (from legacy Lovable design) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --radius: 0.625rem;
+    --civic: oklch(0.36 0.07 160);
+    --civic-foreground: oklch(0.985 0.005 160);
+    --civic-muted: oklch(0.95 0.02 160);
+    --gold: oklch(0.62 0.13 65);
+    --gold-foreground: oklch(0.99 0.005 65);
+    --gold-muted: oklch(0.95 0.04 75);
+    --background: oklch(0.985 0.003 90);
+    --foreground: oklch(0.18 0.01 250);
+    --surface: oklch(0.97 0.004 90);
+    --surface-elevated: oklch(1 0 0);
+    --rule: oklch(0.9 0.005 250);
+    --ink: oklch(0.18 0.01 250);
+    --ink-soft: oklch(0.42 0.01 250);
+    --ink-faint: oklch(0.62 0.008 250);
+    --muted-foreground: var(--ink-soft);
+    --border: var(--rule);
+    --destructive: oklch(0.55 0.2 27);
+    --secondary: oklch(0.96 0.005 250);
+    --secondary-foreground: var(--ink);
+    --muted: oklch(0.96 0.005 250);
+    --accent: var(--gold-muted);
+    --accent-foreground: oklch(0.3 0.08 65);
+    /* Refined scrollbars (Firefox + WebKit) */
+    --scrollbar-size: 7px;
+    --scrollbar-thumb: color-mix(in oklab, var(--civic) 42%, oklch(0.55 0.01 250));
+    --scrollbar-thumb-hover: color-mix(in oklab, var(--civic) 78%, oklch(0.32 0.04 160));
+    --scrollbar-thumb-active: color-mix(in oklab, var(--civic) 90%, oklch(0.28 0.05 160));
+    --scrollbar-track: color-mix(in oklab, var(--surface) 70%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Global scrollbars — thin, rounded, no arrow buttons (WebKit override)
+   -------------------------------------------------------------------------- */
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-color: var(--scrollbar-thumb);
+    transition: background-color 0.15s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-thumb:active {
+    background-color: var(--scrollbar-thumb-active);
+}
+
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *::-webkit-scrollbar-thumb {
+        transition: none;
+    }
+}
+
+@keyframes civic-marquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.animate-civic-marquee {
+    animation: civic-marquee 28s linear infinite;
+}
+
+@media (min-width: 640px) {
+    .animate-civic-marquee {
+        animation-duration: 32s;
+    }
+}
+
+@media (min-width: 1024px) {
+    .animate-civic-marquee {
+        animation-duration: 40s;
+    }
+}
+
+@keyframes civic-slide-in-left {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.animate-civic-slide-in-left {
+    animation: civic-slide-in-left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}

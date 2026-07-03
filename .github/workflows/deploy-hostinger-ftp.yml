@@ -1,0 +1,159 @@
+# Deploy Laravel + Inertia (Vite client + SSR build) to Hostinger shared hosting over FTP/FTPS.
+#
+# GitHub → Settings → Secrets and variables → Actions → New repository secret:
+#   FTP_SERVER       — Hostname or IPv4 only (no protocol, no path). Examples:
+#                      ftp.yourdomain.com  |  46.17.xxx.xxx
+#                      If DNS checks fail in CI but FileZilla works, use the server IPv4 from hPanel as FTP_SERVER.
+#                      Do NOT use: ftp://..., https://..., or SFTP-only endpoints (this workflow is FTP/FTPS).
+#
+# Optional repository variable (Settings → Secrets and variables → Actions → Variables):
+#   FTP_SKIP_DNS_CHECK = true   — skip DNS verification in CI (use if you know the host is reachable but public DNS fails).
+#   FTP_USERNAME     — FTP user
+#   FTP_PASSWORD     — FTP password or app password
+#   FTP_SERVER_DIR   — Remote folder that will contain Laravel root (app/, public/, vendor/, …).
+#                      Examples: /public_html  or  /domains/yoursite.com/public_html
+#                      Use a leading slash; trailing slash optional depending on host.
+#
+# Optional secrets (omit to use defaults below):
+#   FTP_PORT         — default 21 (use 990 for implicit FTPS if your host requires it)
+#   FTP_PROTOCOL     — default ftp; try ftps or ftps-legacy if the host requires encryption
+#
+# Hostinger / Laravel notes:
+#   - Point the domain document root to Laravel `public/` (not the repo root), or use the root `.htaccess`
+#     in this repo to route into `public/`.
+#   - Create `.env` on the server only (never commit). Then: php artisan key:generate, migrate, storage:link.
+#   - Ensure `storage/` and `bootstrap/cache/` are writable (hPanel or chmod 775).
+#   - This job uploads `public/build/` from CI (no Node on the server). `vendor/` is excluded from FTP;
+#     run `composer install --no-dev --optimize-autoloader` on the server (SSH/cPanel Terminal) after deploy.
+#   - CI uses PHP 8.2.30 to match composer.json platform + Hostinger. Set hPanel → PHP to 8.2 (8.2.30 or compatible patch).
+
+name: Deploy to Hostinger (FTP)
+
+on:
+  push:
+    branches:
+      - main
+      - fullstack
+  workflow_dispatch:
+
+concurrency:
+  group: hostinger-ftp-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2.30'
+          extensions: mbstring, dom, fileinfo, pdo, pdo_mysql, tokenizer, xml, ctype, json, bcmath, openssl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer dependencies (production)
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-ansi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install NPM dependencies and build (Vite + SSR)
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare FTP hostname (normalize + DNS check)
+        id: ftp_host
+        env:
+          FTP_SERVER_RAW: ${{ secrets.FTP_SERVER }}
+          FTP_SKIP_DNS_CHECK: ${{ vars.FTP_SKIP_DNS_CHECK }}
+        run: |
+          set -euo pipefail
+          raw="${FTP_SERVER_RAW:-}"
+          raw="${raw%\"}"
+          raw="${raw#\"}"
+          raw="${raw%\'}"
+          raw="${raw#\'}"
+          raw=$(printf '%s' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          host=$(printf '%s' "$raw" | sed -E 's#^(ftp|ftps|sftp|http|https)://##I')
+          host="${host%%/*}"
+          host="${host%%\?*}"
+          host=$(printf '%s' "$host" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          host="${host%.}"
+          if [ -z "$host" ]; then
+            echo "::error::FTP_SERVER is empty or invalid after normalization. Set it to the FTP hostname or IPv4 only (see workflow header comments)."
+            exit 1
+          fi
+
+          skip="${FTP_SKIP_DNS_CHECK:-}"
+          skip_lc=$(printf '%s' "$skip" | tr '[:upper:]' '[:lower:]')
+
+          if [[ "$host" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+            echo "::notice::FTP_SERVER looks like an IPv4 address — skipping DNS lookup."
+          elif [ "$skip_lc" = "true" ] || [ "$skip_lc" = "1" ] || [ "$skip_lc" = "yes" ]; then
+            echo "::notice::FTP_SKIP_DNS_CHECK is set — skipping DNS verification. If the FTP step still fails, fix FTP_SERVER, FTP_PORT, or FTP_PROTOCOL."
+          elif H="$host" python3 -c 'import os,socket; h=os.environ["H"].strip(); socket.getaddrinfo(h, 21, type=socket.SOCK_STREAM)' 2>/dev/null; then
+            :
+          else
+            echo "::error::Could not resolve FTP_SERVER from GitHub's network. Fix the secret (typo, hidden spaces) or paste the server IPv4 from Hostinger hPanel → Files → FTP Accounts. You can also set repo variable FTP_SKIP_DNS_CHECK=true to skip this check."
+            exit 1
+          fi
+
+          {
+            echo "host<<EOF"
+            printf '%s\n' "$host"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ steps.ftp_host.outputs.host }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ secrets.FTP_PROTOCOL != '' && secrets.FTP_PROTOCOL || 'ftp' }}
+          port: ${{ secrets.FTP_PORT != '' && secrets.FTP_PORT || 21 }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          local-dir: ./
+          # Differential deploy state on the server (do not delete manually).
+          state-name: .ftp-deploy-sync-state.json
+          exclude: |
+            **/vendor/**
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/tests/**
+            **/.github/**
+            **/.env
+            **/.env.backup
+            **/.env.production
+            **/.idea/**
+            **/.vscode/**
+            **/.zed/**
+            **/.fleet/**
+            **/*.md
+            **/phpunit.xml
+            **/.phpunit.result.cache
+            **/.phpactor.json
+            **/database/database.sqlite
+            **/storage/logs/**
+            **/storage/framework/cache/data/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**
+            **/bootstrap/ssr/**
+            **/legacy/tanstack-start/node_modules/**
+          log-level: standard
