@@ -1,0 +1,35 @@
+---
+description: WaCloud WhatsApp API SaaS — Laravel 11 + Inertia React + Docker
+alwaysApply: true
+---
+
+# WaCloud WhatsApp API SaaS
+
+## Architecture
+
+- **Laravel monolith**: tenants (`organizations`), API keys, messages (source of truth), webhooks, Inertia dashboard.
+- **Node bridge** (`services/whatsapp-bridge`): Baileys WhatsApp Web sessions only — QR, send/receive text. Internal network only.
+- **Provider abstraction**: `WhatsAppProvider` interface — `web` (bridge), `cloud_api` (stub), sandbox via `organization.is_sandbox`.
+- **Queues**: Redis + `worker` container — all send/receive paths are async.
+
+## Routes
+
+- **Public**: `GET /` → `Public/Home`
+- **Dashboard**: `GET /dashboard`, `/accounts`, `/inbox`, `/api-keys`, `/webhooks`, `/docs/api`
+- **Customer API**: `routes/api.php` → `/api/v1/*` with `Authorization: Bearer {api_key}`
+- **Bridge callbacks**: `/api/internal/bridge/*` with `X-Bridge-Secret`
+
+## Docker
+
+```bash
+docker compose up -d --build
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan db:seed
+docker compose --profile assets run --rm node bash -c "npm run build"
+```
+
+Services: `app`, `nginx`, `mysql` (profile), `redis`, `worker`, `bridge`.
+
+## Default login
+
+`admin@mail.com` / `password` (see `AdminUserSeeder`)

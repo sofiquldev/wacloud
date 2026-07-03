@@ -1,8 +1,7 @@
 const defaultItems = [
-    'সর্বশেষ খবর: ২০২৪-২৫ অর্থবছরের জন্য নতুন ট্রেড লাইসেন্স নবায়ন কার্যক্রম শুরু হয়েছে।',
-    'Property tax deadline extended to June 15th — pay online via the Holding Tax portal.',
-    'Tender Notice: Construction of Drainage Network Phase II — submissions open until June 12.',
-    'Vaccination drive at Ward 4 Community Center this Friday from 9 AM to 4 PM.',
+    'Welcome to WaCloud — your Laravel + Inertia starter with a civic-inspired UI.',
+    'Sign in to access the admin dashboard and profile settings.',
+    'Customize this notice ticker in PublicNoticeTicker.jsx for your project.',
 ];
 
 export function PublicNoticeTicker({ items = defaultItems }) {

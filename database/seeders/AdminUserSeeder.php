@@ -3,17 +3,15 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Services\OrganizationProvisioner;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class AdminUserSeeder extends Seeder
 {
-    /**
-     * Default staff account for local / staging (change in production).
-     */
     public function run(): void
     {
-        User::query()->updateOrCreate(
+        $user = User::query()->updateOrCreate(
             ['email' => 'admin@mail.com'],
             [
                 'name' => 'Site Administrator',
@@ -21,5 +19,9 @@ class AdminUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
+
+        if (! $user->currentOrganization()) {
+            app(OrganizationProvisioner::class)->provisionForUser($user, 'WaCloud Demo');
+        }
     }
 }

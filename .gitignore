@@ -26,3 +26,4 @@ yarn-error.log
 
 # Archived Lovable / TanStack app (optional local installs)
 /legacy/tanstack-start/node_modules
+/services/whatsapp-bridge/node_modules

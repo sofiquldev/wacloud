@@ -1,3 +1,5 @@
+name: wacloud
+
 services:
   app:
     build:
@@ -8,23 +10,78 @@ services:
     env_file:
       - .env
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      # Avoid session/cache/queue writes on SQLite when the bind-mounted DB file is not writable by www-data.
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
       SESSION_DRIVER: file
-      CACHE_STORE: file
-      QUEUE_CONNECTION: sync
     depends_on:
+      redis:
+        condition: service_healthy
       mysql:
         condition: service_healthy
         required: false
     networks:
-      - pabna
+      - wacloud
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+        required: false
+      app:
+        condition: service_started
+    networks:
+      - wacloud
+    restart: unless-stopped
+
+  bridge:
+    build:
+      context: ./services/whatsapp-bridge
+      dockerfile: Dockerfile
+    environment:
+      PORT: "3001"
+      LARAVEL_INTERNAL_URL: http://nginx
+      BRIDGE_SECRET: ${BRIDGE_SECRET:-change-me-bridge-secret}
+      REDIS_URL: redis://redis:6379
+      AUTH_DIR: /data/sessions
+    volumes:
+      - bridge_sessions:/data/sessions
+    depends_on:
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
+    networks:
+      - wacloud
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - wacloud
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   nginx:
     image: nginx:1.25-alpine
     environment:
-      # Quieter entrypoint script output from the official image.
       NGINX_ENTRYPOINT_QUIET_LOGS: "1"
     ports:
       - "${APP_PORT:-8080}:80"
@@ -35,30 +92,29 @@ services:
     depends_on:
       - app
     networks:
-      - pabna
+      - wacloud
 
-  # Optional MySQL 8 (match shared hosting). Default dev uses SQLite — no profile needed for app+nginx.
   mysql:
     image: mysql:8.0
     profiles: ["mysql"]
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-pabna}
-      MYSQL_USER: ${DB_USERNAME:-pabna}
+      MYSQL_DATABASE: ${DB_DATABASE:-wacloud}
+      MYSQL_USER: ${DB_USERNAME:-wacloud}
       MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
     ports:
       - "${DB_PORT_FORWARD:-33060}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     networks:
-      - pabna
+      - wacloud
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # Run asset builds or `npm run dev` here — not required on shared hosting.
   node:
     image: node:22-bookworm-slim
     working_dir: /var/www/html
@@ -68,10 +124,11 @@ services:
     tty: true
     stdin_open: true
     networks:
-      - pabna
+      - wacloud
 
 networks:
-  pabna:
+  wacloud:
 
 volumes:
   mysql_data:
+  bridge_sessions:

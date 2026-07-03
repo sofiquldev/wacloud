@@ -75,8 +75,7 @@ export default function GuestLayout({ children }) {
                         </span>
                     </Link>
                     <p className="mt-6 max-w-sm text-sm leading-relaxed text-civic-foreground/85">
-                        Secure access for staff and administrators. Sign in with your official credentials to manage
-                        municipal services and content.
+                        Secure access for WaCloud staff. Sign in to open the admin dashboard and manage your account.
                     </p>
                 </div>
                 <div className="relative z-[1] mt-10 lg:mt-0">
@@ -85,7 +84,7 @@ export default function GuestLayout({ children }) {
                         className="inline-flex items-center gap-2 text-sm font-medium text-gold transition hover:text-gold-foreground hover:underline"
                     >
                         <span aria-hidden>←</span>
-                        Back to public website
+                        Back to website
                     </Link>
                 </div>
             </aside>

@@ -5,34 +5,34 @@ cd /var/www/html
 
 # Bind-mounted repos often have no vendor/ after clone; install once before artisan or FPM need it.
 if [[ ! -f vendor/autoload.php ]] && [[ -f composer.json ]]; then
-    echo "pabna-docker-entrypoint: installing Composer dependencies..."
+    echo "wacloud-docker-entrypoint: installing Composer dependencies..."
     git config --global --add safe.directory /var/www/html 2>/dev/null || true
     composer install --no-interaction --prefer-dist
 fi
 
 # When using MySQL/MariaDB (e.g. compose profile `mysql`), FPM often starts before the server accepts connections.
 if [[ "${DB_CONNECTION:-}" == "mysql" || "${DB_CONNECTION:-}" == "mariadb" ]]; then
-    echo "pabna-docker-entrypoint: waiting for ${DB_CONNECTION} at ${DB_HOST:-mysql}:${DB_PORT:-3306}..."
+    echo "wacloud-docker-entrypoint: waiting for ${DB_CONNECTION} at ${DB_HOST:-mysql}:${DB_PORT:-3306}..."
     php -r '
         $h = getenv("DB_HOST") ?: "mysql";
         $p = (int) (getenv("DB_PORT") ?: 3306);
-        $u = getenv("DB_USERNAME") ?: "root";
-        $w = getenv("DB_PASSWORD");
-        $w = $w === false ? "" : $w;
+        // Use root for readiness — app credentials may not exist yet on an existing volume.
+        $u = "root";
+        $w = getenv("DB_ROOT_PASSWORD") ?: "rootsecret";
         $dsn = "mysql:host={$h};port={$p}";
         $last = null;
         $max = (int) (getenv("MYSQL_WAIT_SECONDS") ?: 90);
         for ($i = 0; $i < $max; $i++) {
             try {
                 new PDO($dsn, $u, $w, [PDO::ATTR_TIMEOUT => 3]);
-                fwrite(STDOUT, "pabna-docker-entrypoint: database is accepting connections\n");
+                fwrite(STDOUT, "wacloud-docker-entrypoint: database is accepting connections\n");
                 exit(0);
             } catch (Throwable $e) {
                 $last = $e;
                 sleep(1);
             }
         }
-        fwrite(STDERR, "pabna-docker-entrypoint: gave up after {$max}s: ".($last ? $last->getMessage() : "unknown")."\n");
+        fwrite(STDERR, "wacloud-docker-entrypoint: gave up after {$max}s: ".($last ? $last->getMessage() : "unknown")."\n");
         exit(1);
     '
 fi

@@ -1,12 +1,9 @@
 import { PublicFooter } from '@/Components/Public/PublicFooter';
-import { PublicHeader } from '@/Components/Public/PublicHeader';
-import { PublicMainNav } from '@/Components/Public/PublicMainNav';
-import { PublicNoticeTicker } from '@/Components/Public/PublicNoticeTicker';
-import { PublicTopBar } from '@/Components/Public/PublicTopBar';
+import { PublicNavbar } from '@/Components/Public/PublicNavbar';
 import { mergePublicSite } from '@/utils/siteAppearance';
 import { Head, usePage } from '@inertiajs/react';
 
-export function PublicSiteLayout({ children, canLogin }) {
+export function PublicSiteLayout({ children, canLogin, canRegister }) {
     const site = mergePublicSite(usePage().props.site ?? {});
 
     return (
@@ -19,10 +16,7 @@ export function PublicSiteLayout({ children, canLogin }) {
                     dangerouslySetInnerHTML={{ __html: site.customHeadCss || '' }}
                 />
             </Head>
-            <PublicTopBar canLogin={canLogin} />
-            <PublicHeader />
-            <PublicMainNav />
-            {site.noticeTickerEnabled !== false ? <PublicNoticeTicker /> : null}
+            <PublicNavbar canLogin={canLogin} canRegister={canRegister} />
             <main className="flex-1">{children}</main>
             <PublicFooter />
         </div>

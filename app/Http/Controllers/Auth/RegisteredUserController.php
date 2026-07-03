@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\OrganizationProvisioner;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,20 +17,15 @@ use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(): Response
     {
         return Inertia::render('Auth/Register');
     }
 
     /**
-     * Handle an incoming registration request.
-     *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, OrganizationProvisioner $provisioner): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -42,6 +38,8 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        $provisioner->provisionForUser($user);
 
         event(new Registered($user));
 

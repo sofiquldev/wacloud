@@ -6,7 +6,7 @@ import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { Save } from 'lucide-react';
 
-const labelClass = 'text-sm font-medium text-slate-700';
+const labelClass = 'text-sm font-medium text-foreground';
 
 export default function SettingsProfileForm({ mustVerifyEmail, status }) {
     const user = usePage().props.auth.user;
@@ -15,7 +15,6 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
         useForm({
             name: user.name,
             email: user.email,
-            phone: user.phone ?? '',
             password: '',
             password_confirmation: '',
         });
@@ -34,11 +33,11 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
     return (
         <div>
             <header className="mb-8">
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-lg font-semibold text-foreground">
                     My profile
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                    Information shown across the admin console.
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Information shown across the WaCloud console.
                 </p>
             </header>
 
@@ -52,7 +51,7 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
                         />
                         <TextInput
                             id="settings_name"
-                            variant="settings"
+                            variant="civic"
                             className="mt-1.5 block w-full"
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
@@ -74,7 +73,7 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
                         <TextInput
                             id="settings_email"
                             type="email"
-                            variant="settings"
+                            variant="civic"
                             className="mt-1.5 block w-full"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
@@ -89,28 +88,6 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
 
                     <div>
                         <InputLabel
-                            htmlFor="settings_phone"
-                            value="Phone"
-                            className={labelClass}
-                        />
-                        <TextInput
-                            id="settings_phone"
-                            type="tel"
-                            variant="settings"
-                            className="mt-1.5 block w-full"
-                            value={data.phone}
-                            onChange={(e) => setData('phone', e.target.value)}
-                            autoComplete="tel"
-                            placeholder="+880 …"
-                        />
-                        <InputError
-                            className="mt-2"
-                            message={errors.phone}
-                        />
-                    </div>
-
-                    <div>
-                        <InputLabel
                             htmlFor="settings_password"
                             value="Change password"
                             className={labelClass}
@@ -118,7 +95,7 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
                         <TextInput
                             id="settings_password"
                             type="password"
-                            variant="settings"
+                            variant="civic"
                             className="mt-1.5 block w-full"
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
@@ -142,7 +119,7 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
                         <TextInput
                             id="settings_password_confirmation"
                             type="password"
-                            variant="settings"
+                            variant="civic"
                             className="mt-1.5 block w-full"
                             value={data.password_confirmation}
                             onChange={(e) =>
@@ -189,7 +166,7 @@ export default function SettingsProfileForm({ mustVerifyEmail, status }) {
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-slate-500">Saved.</p>
+                        <p className="text-sm text-muted-foreground">Saved.</p>
                     </Transition>
                     <PrimaryButton
                         type="submit"

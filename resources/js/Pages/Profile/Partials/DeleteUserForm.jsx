@@ -48,11 +48,9 @@ export default function DeleteUserForm({ className = '' }) {
     return (
         <section className={`space-y-6 ${className}`}>
             <header>
-                <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-                    Delete Account
-                </h2>
+                <h2 className="text-lg font-semibold text-foreground">Delete account</h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                     Once your account is deleted, all of its resources and data
                     will be permanently deleted. Before deleting your account,
                     please download any data or information that you wish to
@@ -93,7 +91,7 @@ export default function DeleteUserForm({ className = '' }) {
                             onChange={(e) =>
                                 setData('password', e.target.value)
                             }
-                            variant="settings"
+                            variant="civic"
                             className="mt-1 block w-full max-w-md sm:w-3/4"
                             isFocused
                             placeholder="Password"

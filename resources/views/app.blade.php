@@ -29,17 +29,9 @@
         @routes
         @viteReactRefresh
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
-        @php($injectCustomSiteCode = str_starts_with((string) ($page['component'] ?? ''), 'Public/'))
-        @php($siteArr = is_array($site) ? $site : [])
-        @if ($injectCustomSiteCode && filled($siteArr['customHeadCss'] ?? null))
-            <style id="site-custom-head-css">{!! $siteArr['customHeadCss'] !!}</style>
-        @endif
         @inertiaHead
     </head>
     <body class="font-sans antialiased">
         @inertia
-        @if ($injectCustomSiteCode && filled($siteArr['customBodyJs'] ?? null))
-            {!! $siteArr['customBodyJs'] !!}
-        @endif
     </body>
 </html>

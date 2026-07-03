@@ -3,28 +3,25 @@ import { mergePublicSite } from '@/utils/siteAppearance';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Bell,
-    Building2,
     ChevronRight,
-    FileStack,
-    FileText,
+    Cloud,
+    Code,
     Inbox,
+    Key,
     LayoutDashboard,
-    LayoutGrid,
-    ListTree,
     Menu,
     Search,
     Settings,
-    User as UserIcon,
-    Vote,
+    Smartphone,
+    Webhook,
     Wifi,
-    Wrench,
     X,
 } from 'lucide-react';
 import { useState } from 'react';
 
 const navGroups = [
     {
-        label: 'Governance',
+        label: 'Console',
         items: [
             {
                 label: 'Dashboard',
@@ -34,77 +31,50 @@ const navGroups = [
                 match: 'dashboard',
             },
             {
-                label: 'Members',
-                href: () => route('admin.members.index'),
+                label: 'Accounts',
+                href: () => route('console.accounts.index'),
                 real: true,
-                icon: UserIcon,
-                match: 'admin.members.index',
+                icon: Smartphone,
+                match: 'console.accounts.index',
             },
             {
-                label: 'Elections',
-                href: () => route('admin.elections.index'),
-                real: true,
-                icon: Vote,
-                match: 'admin.elections.index',
-            },
-        ],
-    },
-    {
-        label: 'Content',
-        items: [
-            {
-                label: 'Pages',
-                href: () => route('admin.pages.index'),
-                real: true,
-                icon: FileStack,
-                match: 'admin.pages.index',
-            },
-            {
-                label: 'Services',
-                href: () => route('admin.services.index'),
-                real: true,
-                icon: Wrench,
-                match: 'admin.services.index',
-            },
-            {
-                label: 'Notices',
-                href: () => route('admin.notices.index'),
-                real: true,
-                icon: FileText,
-                match: 'admin.notices.index',
-            },
-        ],
-    },
-    {
-        label: 'Citizens',
-        items: [
-            {
-                label: 'Complaints',
-                href: () => route('admin.complaints.index'),
+                label: 'Inbox',
+                href: () => route('console.inbox.index'),
                 real: true,
                 icon: Inbox,
-                match: 'admin.complaints.index',
-                badge: '12',
+                match: 'console.inbox.index',
             },
         ],
     },
     {
-        label: 'Site',
+        label: 'Developers',
         items: [
             {
-                label: 'Templates',
-                href: () => route('admin.templates.index'),
+                label: 'API Keys',
+                href: () => route('console.api-keys.index'),
                 real: true,
-                icon: LayoutGrid,
-                match: 'admin.templates.index',
+                icon: Key,
+                match: 'console.api-keys.index',
             },
             {
-                label: 'Main navigation',
-                href: () => route('admin.menus.index'),
+                label: 'Webhooks',
+                href: () => route('console.webhooks.index'),
                 real: true,
-                icon: ListTree,
-                match: 'admin.menus.index',
+                icon: Webhook,
+                match: 'console.webhooks.index',
             },
+            {
+                label: 'API Docs',
+                href: () => route('console.api-docs'),
+                real: true,
+                icon: Code,
+                match: 'console.api-docs',
+            },
+        ],
+    },
+    {
+        label: 'Account',
+        items: [
             {
                 label: 'Settings',
                 href: () => route('profile.edit'),
@@ -124,12 +94,12 @@ function SidebarBody({ onNavigate }) {
         <div className="flex h-full flex-col bg-surface-elevated">
             <div className="flex h-14 items-center gap-2 border-b border-border px-4">
                 <div className="grid size-8 place-items-center rounded-md bg-civic text-civic-foreground">
-                    <Building2 className="size-4" />
+                    <Cloud className="size-4" />
                 </div>
                 <div className="min-w-0 leading-tight">
                     <p className="truncate text-sm font-semibold text-foreground">{orgLine}</p>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Admin Console
+                        WaCloud Console
                     </p>
                 </div>
             </div>
@@ -198,7 +168,7 @@ function SidebarBody({ onNavigate }) {
                     className="block text-xs text-muted-foreground hover:text-foreground"
                     onClick={() => onNavigate?.()}
                 >
-                    ← Back to public site
+                    ← Back to website
                 </Link>
             </div>
         </div>
@@ -212,22 +182,19 @@ function Breadcrumbs() {
     const crumbParent =
         'truncate text-muted-foreground hover:text-foreground hover:underline';
 
-    const sectionTitles = {
-        members: 'Members',
-        elections: 'Elections',
-        pages: 'Pages',
-        services: 'Services',
-        notices: 'Notices',
-        complaints: 'Complaints',
-        templates: 'Templates',
-        menus: 'Main navigation',
-    };
-
     const CrumbAdmin = () => (
         <Link href={route('dashboard')} className={crumbParent}>
-            Admin
+            Console
         </Link>
     );
+
+    const titles = {
+        accounts: 'Accounts',
+        inbox: 'Inbox',
+        'api-keys': 'API Keys',
+        webhooks: 'Webhooks',
+        docs: 'API Docs',
+    };
 
     if (path.startsWith('/profile')) {
         return (
@@ -239,40 +206,22 @@ function Breadcrumbs() {
         );
     }
 
-    const contentMatch = path.match(/^\/admin\/content\/([^/]+)\/([^/]+)/);
-    if (contentMatch) {
-        const [, kind, id] = contentMatch;
-        const kindLabel =
-            kind === 'page' ? 'Page' : kind === 'service' ? 'Service' : 'Notice';
-        const tail = id === 'new' ? `New ${kindLabel}` : `Edit ${kindLabel}`;
+    const sectionMatch = path.match(/^\/(accounts|inbox|api-keys|webhooks|docs)(?:\/|$)/);
+    if (sectionMatch) {
+        const title = titles[sectionMatch[1]] || sectionMatch[1];
         return (
             <span className="flex min-w-0 items-center gap-1.5 text-sm">
                 <CrumbAdmin />
                 <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
-                <span className={crumbCurrent}>{tail}</span>
+                <span className={crumbCurrent}>{title}</span>
             </span>
         );
     }
 
-    const adminMatch = path.match(/^\/admin\/([^/?]+)/);
-    if (adminMatch) {
-        const seg = adminMatch[1];
-        const title = sectionTitles[seg];
-        if (title) {
-            return (
-                <span className="flex min-w-0 items-center gap-1.5 text-sm">
-                    <CrumbAdmin />
-                    <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className={crumbCurrent}>{title}</span>
-                </span>
-            );
-        }
-    }
-
-    if (path === '/admin' || path === '/dashboard') {
+    if (path === '/dashboard') {
         return (
             <span className="flex min-w-0 items-center gap-1.5 text-sm">
-                <span className="truncate text-muted-foreground">Admin</span>
+                <span className="truncate text-muted-foreground">Console</span>
                 <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
                 <span className={crumbCurrent}>Dashboard</span>
             </span>
@@ -281,7 +230,7 @@ function Breadcrumbs() {
 
     return (
         <span className="flex min-w-0 items-center gap-1.5 text-sm">
-            <span className={crumbCurrent}>Admin</span>
+            <span className={crumbCurrent}>Console</span>
         </span>
     );
 }
@@ -399,7 +348,7 @@ export default function AuthenticatedLayout({ children }) {
 
                 <footer className="flex h-9 shrink-0 items-center justify-between border-t border-border bg-surface-elevated px-4 text-xs text-muted-foreground">
                     <span>
-                        © {site.footerOrganizationShort} · Admin Console
+                        © {site.footerOrganizationShort} · WaCloud Console
                     </span>
                     <span className="flex items-center gap-1.5">
                         <Wifi className="size-3.5 text-civic" />
