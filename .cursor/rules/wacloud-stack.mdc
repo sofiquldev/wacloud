@@ -5,30 +5,48 @@ alwaysApply: true
 
 # WaCloud WhatsApp API SaaS
 
+## Two environments (do not mix .env files)
+
+| | **Development** | **Production (Hostinger)** |
+|---|---|---|
+| Runtime | Docker Compose (`app`, `nginx`, `mysql`, `redis`, `worker`, `bridge`) | Shared hosting — **PHP only** |
+| Template | `.env.docker.example` → copy to local `.env` | `.env.hostinger.example` → `.env` on server only |
+| Database | `DB_HOST=mysql` (set by compose) | `DB_HOST=127.0.0.1` + hPanel MySQL credentials |
+| Cache / queue | Redis (`CACHE_STORE=redis`, `QUEUE_CONNECTION=redis`) | **file** + **sync** — no Redis container |
+| WhatsApp bridge | `BRIDGE_URL=http://bridge:3001` (compose) | Empty or public VPS URL — **no Node on Hostinger** |
+| Flag | `WACLOUD_DOCKER=true` in compose | Not set; `HostingEnvironment` auto-fixes Docker hostnames |
+
+Never upload the local Docker `.env` to Hostinger. If `REDIS_HOST=redis` or `BRIDGE_URL=http://bridge:3001` leak to production, `AppServiceProvider` forces file/sync drivers and disables the bridge — but fix `.env` on the server anyway.
+
 ## Architecture
 
-- **Laravel monolith**: tenants (`organizations`), API keys, messages (source of truth), webhooks, Inertia dashboard.
-- **Node bridge** (`services/whatsapp-bridge`): Baileys WhatsApp Web sessions only — QR, send/receive text. Internal network only.
-- **Provider abstraction**: `WhatsAppProvider` interface — `web` (bridge), `cloud_api` (stub), sandbox via `organization.is_sandbox`.
-- **Queues**: Redis + `worker` container — all send/receive paths are async.
+- **Laravel monolith**: tenants, API keys, messages, webhooks, Inertia dashboard.
+- **Node bridge** (`services/whatsapp-bridge`): Baileys Web — **Docker/VPS only**, not shared hosting.
+- **Provider abstraction**: `web` (bridge), `cloud_api` (stub), sandbox via `organization.is_sandbox`.
+- **Queues**: Redis + `worker` in Docker; `sync` on Hostinger (messages process inline).
 
-## Routes
-
-- **Public**: `GET /` → `Public/Home`
-- **Dashboard**: `GET /dashboard`, `/accounts`, `/inbox`, `/api-keys`, `/webhooks`, `/docs/api`
-- **Customer API**: `routes/api.php` → `/api/v1/*` with `Authorization: Bearer {api_key}`
-- **Bridge callbacks**: `/api/internal/bridge/*` with `X-Bridge-Secret`
-
-## Docker
+## Docker (local dev)
 
 ```bash
+cp .env.docker.example .env
 docker compose up -d --build
 docker compose exec app php artisan migrate --force
 docker compose exec app php artisan db:seed
 docker compose --profile assets run --rm node bash -c "npm run build"
 ```
 
-Services: `app`, `nginx`, `mysql` (profile), `redis`, `worker`, `bridge`.
+## Hostinger deploy
+
+- GitHub Action: `.github/workflows/deploy-hostinger-ftp.yml` (FTP upload, no `.env`).
+- On server: `composer install --no-dev`, `php artisan key:generate`, `migrate`, `storage:link`.
+- Document root → `public/`. Writable: `storage/`, `bootstrap/cache/`.
+
+## Routes
+
+- **Public**: `GET /`, `/pricing`
+- **Dashboard**: `/dashboard`, `/accounts`, `/inbox`, `/api-keys`, `/webhooks`, `/docs/api`
+- **API**: `/api/v1/*` with bearer API key
+- **Bridge callbacks**: `/api/internal/bridge/*` (only when bridge is deployed)
 
 ## Default login
 

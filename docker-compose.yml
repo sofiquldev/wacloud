@@ -10,10 +10,13 @@ services:
     env_file:
       - .env
     environment:
+      WACLOUD_DOCKER: "true"
+      DB_HOST: mysql
       REDIS_HOST: redis
       QUEUE_CONNECTION: redis
       CACHE_STORE: redis
       SESSION_DRIVER: file
+      BRIDGE_URL: http://bridge:3001
     depends_on:
       redis:
         condition: service_healthy
@@ -33,9 +36,12 @@ services:
     env_file:
       - .env
     environment:
+      WACLOUD_DOCKER: "true"
+      DB_HOST: mysql
       REDIS_HOST: redis
       QUEUE_CONNECTION: redis
       CACHE_STORE: redis
+      BRIDGE_URL: http://bridge:3001
     depends_on:
       redis:
         condition: service_healthy

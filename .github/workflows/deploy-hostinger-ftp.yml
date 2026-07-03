@@ -21,8 +21,14 @@
 # Hostinger / Laravel notes:
 #   - Point the domain document root to Laravel `public/` (not the repo root), or use the root `.htaccess`
 #     in this repo to route into `public/`.
-#   - Create `.env` on the server only (never commit). Then: php artisan key:generate, migrate, storage:link.
+#   - Create `.env` on the server from `.env.hostinger.example` (never copy the Docker `.env`).
 #   - Ensure `storage/` and `bootstrap/cache/` are writable (hPanel or chmod 775).
+#   - Server `.env` must NOT use Docker hostnames. Use:
+#       CACHE_STORE=file  QUEUE_CONNECTION=sync  SESSION_DRIVER=file
+#       REDIS_HOST=127.0.0.1  (or omit Redis entirely)
+#       BRIDGE_URL=         (empty until Node bridge runs on a VPS with a public URL)
+#     If login or `php artisan optimize:clear` fails with "getaddrinfo for redis", delete
+#     `bootstrap/cache/config.php` on the server, fix `.env`, then run optimize:clear again.
 #   - This job uploads `public/build/` from CI (no Node on the server). `vendor/` is excluded from FTP;
 #     run `composer install --no-dev --optimize-autoloader` on the server (SSH/cPanel Terminal) after deploy.
 #   - CI uses PHP 8.2.30 to match composer.json platform + Hostinger. Set hPanel → PHP to 8.2 (8.2.30 or compatible patch).

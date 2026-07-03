@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\HostingEnvironment;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -73,6 +74,10 @@ class HandleInertiaRequests extends Middleware
                 'description' => null,
                 'keywords' => null,
                 'canonical' => $request->url(),
+            ],
+            'deployment' => [
+                'profile' => HostingEnvironment::profile(),
+                'bridge_available' => (bool) config('wacloud.bridge_available', false),
             ],
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Domains\WhatsApp;
 
 use App\Domains\WhatsApp\Contracts\WhatsAppProvider;
+use App\Domains\WhatsApp\Exceptions\BridgeUnavailableException;
 use App\Domains\WhatsApp\Providers\CloudApiProvider;
 use App\Domains\WhatsApp\Providers\SandboxProvider;
 use App\Domains\WhatsApp\Providers\WebBridgeProvider;
@@ -27,7 +28,11 @@ class WhatsAppProviderManager
 
     public function bridgeClient()
     {
-        return Http::baseUrl(rtrim(config('wacloud.bridge_url'), '/'))
+        if (! config('wacloud.bridge_available', false)) {
+            throw BridgeUnavailableException::notConfigured();
+        }
+
+        return Http::baseUrl(rtrim((string) config('wacloud.bridge_url'), '/'))
             ->withHeaders([
                 'X-Bridge-Secret' => config('wacloud.bridge_secret'),
                 'Accept' => 'application/json',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Console;
 
+use App\Domains\WhatsApp\Exceptions\BridgeUnavailableException;
 use App\Domains\WhatsApp\WhatsAppProviderManager;
 use App\Http\Controllers\Controller;
 use App\Models\WhatsAppAccount;
@@ -48,17 +49,31 @@ class WhatsAppAccountPageController extends Controller
         $org = $request->user()->currentOrganization();
         abort_if($account->organization_id !== $org->id, 404);
 
-        $provider = $providers->for($account);
-        $provider->startSession($account);
-        $status = $provider->sessionStatus($account);
+        $bridgeError = null;
+        $status = ['status' => 'disconnected', 'qr' => null, 'phone' => null];
+
+        try {
+            $provider = $providers->for($account);
+            $provider->startSession($account);
+            $status = $provider->sessionStatus($account);
+        } catch (BridgeUnavailableException $e) {
+            $bridgeError = $e->getMessage();
+        } catch (\Throwable $e) {
+            $bridgeError = $e->getMessage();
+        }
 
         if ($request->wantsJson()) {
+            if ($bridgeError) {
+                return response()->json(['message' => $bridgeError], 503);
+            }
+
             return response()->json(['data' => $status]);
         }
 
         return Inertia::render('Console/AccountQr', [
             'account' => $account,
             'status' => $status,
+            'bridgeError' => $bridgeError,
         ]);
     }
 

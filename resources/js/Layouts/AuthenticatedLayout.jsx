@@ -237,8 +237,12 @@ function Breadcrumbs() {
 
 export default function AuthenticatedLayout({ children }) {
     const user = usePage().props.auth.user;
+    const deployment = usePage().props.deployment ?? {};
     const site = mergePublicSite(usePage().props.site ?? {});
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    const showSharedHostingNotice =
+        deployment.profile === 'shared' && deployment.bridge_available === false;
 
     return (
         <div className="flex min-h-screen flex-col bg-muted lg:h-screen lg:max-h-screen lg:flex-row lg:overflow-hidden">
@@ -343,6 +347,13 @@ export default function AuthenticatedLayout({ children }) {
                 )}
 
                 <main className="min-h-0 flex-1 p-4 sm:p-6 lg:overflow-y-auto lg:p-8">
+                    {showSharedHostingNotice && (
+                        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-relaxed text-amber-950">
+                            <strong>Shared hosting mode.</strong> WhatsApp Web bridge is not running on
+                            this server. Use sandbox mode, point <code className="rounded bg-white/80 px-1">BRIDGE_URL</code> to
+                            a VPS, or use the Meta Cloud API when available.
+                        </p>
+                    )}
                     {children}
                 </main>
 
